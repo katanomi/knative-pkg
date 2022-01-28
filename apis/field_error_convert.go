@@ -30,19 +30,30 @@ func ConvertToFieldErrorToErrorList(ctx context.Context, err *FieldError, path *
 		return
 	}
 	if len(err.errors) > 0 {
-		for _, oneErr := range err.errors {
-			errs = append(errs, convertToFieldError(ctx, oneErr, path)...)
+		for i, oneErr := range err.errors {
+			if len(oneErr.errors) > 0 {
+				errs = append(errs, ConvertToFieldErrorToErrorList(ctx, &err.errors[i], path)...)
+			} else {
+				errs = append(errs, convertToFieldError(ctx, oneErr, path)...)
+			}
 		}
-	} else {
-		errs = append(errs, convertToFieldError(ctx, *err, path)...)
+		return
 	}
+	errs = append(errs, convertToFieldError(ctx, *err, path)...)
 	return
 }
+
+var emptyFieldPathString = field.NewPath("").String()
 
 func convertToFieldError(ctx context.Context, err FieldError, path *field.Path) (errs field.ErrorList) {
 	fieldPath := path
 	if len(err.Paths) > 0 {
-		fieldPath = fieldPath.Child(err.Paths[0])
+		// skip first empty path
+		if fieldPath.String() == emptyFieldPathString {
+			fieldPath = field.NewPath(err.Paths[0])
+		} else {
+			fieldPath = fieldPath.Child(err.Paths[0])
+		}
 	}
 	// checking which error
 	var fieldErr *field.Error

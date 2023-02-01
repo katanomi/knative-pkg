@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -219,7 +219,7 @@ func TestNamespaceStream(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	stream := logstream.FromNamespaces(ctx, f, []string{knativePod.Namespace, userPod.Namespace})
+	stream := logstream.New(ctx, f, logstream.WithNamespaces(knativePod.Namespace, userPod.Namespace))
 	streamC, err := stream.StartStream(testKey, logFunc)
 	if err != nil {
 		t.Fatal("Failed to start the stream: ", err)
@@ -385,7 +385,7 @@ func (f *fakePods) GetLogs(podName string, opts *corev1.PodLogOptions) *restclie
 		Client: fakerest.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
 			resp := &http.Response{
 				StatusCode: http.StatusOK,
-				Body: ioutil.NopCloser(
+				Body: io.NopCloser(
 					strings.NewReader(logsForContainer(opts.Container))),
 			}
 			return resp, nil

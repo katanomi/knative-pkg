@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientgotesting "k8s.io/client-go/testing"
+
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/ptr"
@@ -79,6 +80,13 @@ func TestReconcile(t *testing.T) {
 
 	// These are the rules we expect given the context of "handlers".
 	expectedRules := []admissionregistrationv1.RuleWithOperations{{
+		Operations: []admissionregistrationv1.OperationType{"CREATE", "DELETE", "UPDATE"},
+		Rule: admissionregistrationv1.Rule{
+			APIGroups:   []string{"pkg.knative.dev"},
+			APIVersions: []string{"v1alpha1"},
+			Resources:   []string{"callbackresources", "callbackresources/status"},
+		},
+	}, {
 		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE", "DELETE"},
 		Rule: admissionregistrationv1.Rule{
 			APIGroups:   []string{"pkg.knative.dev"},
@@ -411,6 +419,139 @@ func TestReconcile(t *testing.T) {
 				}},
 			},
 		}},
+	}, {
+		Name: "secret and VWH exist, correcting namespaceSelector, preserving matchLabels",
+		Key:  key,
+		Objects: []runtime.Object{secret, ns,
+			&admissionregistrationv1.ValidatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+				},
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
+					Name: name,
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
+							Namespace: system.Namespace(),
+							Name:      "webhook",
+							// Path is fine.
+							Path: ptr.String(path),
+						},
+						// CABundle is fine.
+						CABundle: []byte("present"),
+					},
+					// Rules are fine.
+					Rules: expectedRules,
+					// NamespaceSelector contains non-knative things.
+					NamespaceSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app.kubernetes.io/name": "knative-eventing",
+						},
+						MatchExpressions: []metav1.LabelSelectorRequirement{{
+							Key:      "foo.knative.dev/exclude",
+							Operator: metav1.LabelSelectorOpDoesNotExist,
+						}, {
+							Key:      "foo.bar/baz",
+							Operator: metav1.LabelSelectorOpDoesNotExist,
+						}},
+					},
+				}},
+			},
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: &admissionregistrationv1.ValidatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            name,
+					OwnerReferences: expectedOwnerReferences,
+				},
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
+					Name: name,
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
+							Namespace: system.Namespace(),
+							Name:      "webhook",
+							Path:      ptr.String(path),
+						},
+						CABundle: []byte("present"),
+					},
+					Rules: expectedRules,
+					NamespaceSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app.kubernetes.io/name": "knative-eventing",
+						},
+						// The knative key is added while the non-knative key is kept.
+						// Old knative key is removed.
+						MatchExpressions: []metav1.LabelSelectorRequirement{{
+							Key:      "webhooks.knative.dev/exclude",
+							Operator: metav1.LabelSelectorOpDoesNotExist,
+						}, {
+							Key:      "foo.bar/baz",
+							Operator: metav1.LabelSelectorOpDoesNotExist,
+						}},
+					},
+				}},
+			},
+		}},
+	}, {
+		Name: "secret and VWH exist, correcting namespaceSelector without existing matchExpressions, preserving matchLabels",
+		Key:  key,
+		Objects: []runtime.Object{secret, ns,
+			&admissionregistrationv1.ValidatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+				},
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
+					Name: name,
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
+							Namespace: system.Namespace(),
+							Name:      "webhook",
+							// Path is fine.
+							Path: ptr.String(path),
+						},
+						// CABundle is fine.
+						CABundle: []byte("present"),
+					},
+					// Rules are fine.
+					Rules: expectedRules,
+					// NamespaceSelector contains non-knative things.
+					NamespaceSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app.kubernetes.io/name": "knative-eventing",
+						},
+					},
+				}},
+			},
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: &admissionregistrationv1.ValidatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            name,
+					OwnerReferences: expectedOwnerReferences,
+				},
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
+					Name: name,
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
+							Namespace: system.Namespace(),
+							Name:      "webhook",
+							Path:      ptr.String(path),
+						},
+						CABundle: []byte("present"),
+					},
+					Rules: expectedRules,
+					NamespaceSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app.kubernetes.io/name": "knative-eventing",
+						},
+						// The knative key is added
+						MatchExpressions: []metav1.LabelSelectorRequirement{{
+							Key:      "webhooks.knative.dev/exclude",
+							Operator: metav1.LabelSelectorOpDoesNotExist,
+						}},
+					},
+				}},
+			},
+		}},
 	}}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
@@ -420,7 +561,8 @@ func TestReconcile(t *testing.T) {
 			},
 			path: path,
 
-			handlers: handlers,
+			handlers:  handlers,
+			callbacks: callbacks,
 
 			client:       kubeclient.Get(ctx),
 			vwhlister:    listers.GetValidatingWebhookConfigurationLister(),

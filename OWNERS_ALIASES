@@ -29,7 +29,6 @@ aliases:
   - snneji
   docs-wg-leads:
   - abrennan89
-  - csantanapr
   - snneji
   docs-writers:
   - abrennan89
@@ -38,22 +37,29 @@ aliases:
   - snneji
   eventing-reviewers:
   - aslom
-  - tayarani
-  - tommyreddad
   eventing-triage:
-  - akashrv
   - lberk
   eventing-wg-leads:
-  - lionelvillard
   - pierDipi
   eventing-writers:
-  - akashrv
   - aliok
   - lberk
   - lionelvillard
   - matzew
   - odacremolbap
   - pierDipi
+  func-reviewers:
+  - jrangelramos
+  - nainaz
+  func-writers:
+  - lance
+  - lkingland
+  - matejvasek
+  - salaboy
+  - zroubalik
+  functions-wg-leads:
+  - lance
+  - salaboy
   knative-admin:
   - csantanapr
   - dprotaso
@@ -67,18 +73,16 @@ aliases:
   - knative-test-reporter-robot
   - kvmware
   - lance
-  - matzew
-  - n3wscott
-  - pmorie
+  - mchmarny
+  - nainaz
+  - psschwei
+  - salaboy
   - smoser-ibm
-  - spencerdillard
-  - thisisnotapril
   - upodroid
-  - vaikas
   - zroubalik
   knative-release-leads:
-  - dprotaso
-  - matzew
+  - evankanderson
+  - psschwei
   knative-robots:
   - knative-automation
   - knative-prow-releaser-robot
@@ -89,18 +93,14 @@ aliases:
   - JRBANCEL
   - ZhiminXiang
   - andrew-su
-  - arturenault
   - carlisia
   - nak3
-  - shashwathi
   - tcnghia
   - vagababov
   - yanweiguo
-  networking-wg-leads:
-  - nak3
+  networking-wg-leads: []
   networking-writers:
   - JRBANCEL
-  - nak3
   - vagababov
   operations-reviewers:
   - Cynocracy
@@ -109,7 +109,6 @@ aliases:
   - jcrossley3
   - matzew
   - maximilien
-  - trshafer
   operations-wg-leads:
   - houshengbo
   operations-writers:
@@ -119,7 +118,6 @@ aliases:
   - jcrossley3
   - matzew
   - maximilien
-  - trshafer
   pkg-configmap-reviewers:
   - dprotaso
   - mattmoor
@@ -133,7 +131,6 @@ aliases:
   - mattmoor
   - tcnghia
   - vagababov
-  - whaught
   pkg-controller-writers:
   - dprotaso
   - mattmoor
@@ -143,9 +140,7 @@ aliases:
   - kvmware
   - upodroid
   productivity-reviewers:
-  - albertomilan
   - evankanderson
-  - gerardo-lc
   - mgencur
   - shinigambit
   productivity-wg-leads:
@@ -160,10 +155,8 @@ aliases:
   - upodroid
   security-wg-leads:
   - evankanderson
-  - julz
   security-writers:
   - evankanderson
-  - julz
   serving-observability-reviewers:
   - skonto
   - yanweiguo
@@ -173,10 +166,8 @@ aliases:
   - carlisia
   - julz
   - nader-ziada
-  - nealhu
   - psschwei
   - skonto
-  - whaught
   serving-wg-leads:
   - dprotaso
   - psschwei
@@ -190,24 +181,21 @@ aliases:
   - csantanapr
   - itsmurugappan
   - lance
-  - pmorie
-  - thisisnotapril
-  - vaikas
+  - nainaz
+  - salaboy
   technical-oversight-committee:
   - dprotaso
   - dsimansk
   - evankanderson
-  - n3wscott
+  - psschwei
   - zroubalik
   trademark-committee:
   - evankanderson
+  - mchmarny
   - smoser-ibm
-  - spencerdillard
   ux-wg-leads:
   - abrennan89
-  - csantanapr
   - snneji
   ux-writers:
   - abrennan89
-  - csantanapr
   - snneji

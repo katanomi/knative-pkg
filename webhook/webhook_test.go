@@ -18,7 +18,7 @@ package webhook
 
 import (
 	"context"
-	"fmt"
+	"crypto/tls"
 	"net"
 	"testing"
 	"time"
@@ -72,24 +72,57 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 }
 
 func TestRegistrationStopChanFire(t *testing.T) {
-	opts := newDefaultOptions()
-	_, ac, cancel := newNonRunningTestWebhook(t, opts)
+	wh, serverURL, _, cancel, err := testSetupNoTLS(t)
+	if err != nil {
+		t.Fatal("testSetup() =", err)
+	}
 	defer cancel()
 
 	stopCh := make(chan struct{})
 
 	var g errgroup.Group
 	g.Go(func() error {
-		return ac.Run(stopCh)
+		return wh.Run(stopCh)
 	})
 	close(stopCh)
 
 	if err := g.Wait(); err != nil {
 		t.Fatal("Error during run: ", err)
 	}
-	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", opts.Port))
+	conn, err := net.Dial("tcp", serverURL)
 	if err == nil {
 		conn.Close()
-		t.Error("Unexpected success to dial to port", opts.Port)
+		t.Error("Unexpected success to dial to ", serverURL)
 	}
+}
+
+func newAdmissionControllerWebhook(t *testing.T, options Options, acs ...interface{}) (*Webhook, error) {
+	ctx, cancel, _ := SetupFakeContextWithCancel(t)
+	defer cancel()
+	ctx = WithOptions(ctx, options)
+	return New(ctx, acs)
+}
+
+func TestTLSMinVersionWebhookOption(t *testing.T) {
+	opts := newDefaultOptions()
+	t.Run("when TLSMinVersion is not configured, and the default is used", func(t *testing.T) {
+		_, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+	})
+	t.Run("when the TLS minimum version configured is supported", func(t *testing.T) {
+		opts.TLSMinVersion = tls.VersionTLS12
+		_, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+	})
+	t.Run("when the TLS minimum version configured is not supported", func(t *testing.T) {
+		opts.TLSMinVersion = tls.VersionTLS11
+		_, err := newAdmissionControllerWebhook(t, opts)
+		if err == nil {
+			t.Fatal("Admission Controller Webhook creation expected to fail due to unsupported TLS version")
+		}
+	})
 }

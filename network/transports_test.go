@@ -189,7 +189,7 @@ func exampleTLSConf() *tls.Config {
 	return &tls.Config{
 		InsecureSkipVerify: false,
 		ServerName:         "example.com",
-		MinVersion:         tls.VersionTLS12,
+		MinVersion:         tls.VersionTLS13,
 	}
 }
 
@@ -207,7 +207,7 @@ func newDialer(ctx context.Context, tlsConf *tls.Config) func(addr string) (net.
 	}
 	if tlsConf != nil {
 		dialFn = func(addr string) (net.Conn, error) {
-			bo.Duration = 10 * time.Millisecond
+			bo.Duration = 50 * time.Millisecond
 			bo.Steps = 3
 			return NewTLSBackoffDialer(bo)(ctx, "tcp4", addr, tlsConf)
 		}

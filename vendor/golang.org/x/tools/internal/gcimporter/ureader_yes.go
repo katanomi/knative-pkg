@@ -274,30 +274,6 @@ func (r *reader) doPkg() *types.Package {
 	return pkg
 }
 
-// flattenImports returns the transitive closure of all imported
-// packages rooted from pkgs.
-func flattenImports(pkgs []*types.Package) []*types.Package {
-	var res []*types.Package
-
-	seen := make(map[*types.Package]bool)
-	var add func(pkg *types.Package)
-	add = func(pkg *types.Package) {
-		if seen[pkg] {
-			return
-		}
-		seen[pkg] = true
-		res = append(res, pkg)
-		for _, imp := range pkg.Imports() {
-			add(imp)
-		}
-	}
-
-	for _, pkg := range pkgs {
-		add(pkg)
-	}
-	return res
-}
-
 // @@@ Types
 
 func (r *reader) typ() types.Type {

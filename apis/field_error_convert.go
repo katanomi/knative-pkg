@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Knative Authors
+Copyright 2024 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,37 +24,93 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
+// ConvertToFieldErrorToErrorListIgnorePathPrefix converts a FieldError into a field.ErrorList
+// and ignores the path prefix if the error path not starts with the prefix
+// and removes the prefix from the path
+func ConvertToFieldErrorToErrorListIgnorePathPrefix(ctx context.Context, err *FieldError, path, ignorePathPrefix *field.Path) (errs field.ErrorList) {
+	errs = convertToFieldErrorToErrorList(ctx, err, path, ignorePathPrefix)
+	// Upgrading tekton to v0.56, errors may repeat
+	// In tekton, it merged list of FieldErrors, remove duplicate errors
+	// Ref: https://github.com/knative/pkg/blob/f5b42e8dea446a2a695ded0ea7c445317aed78b3/apis/field_error.go#L341-L345
+	errs = removeDumplicateError(errs)
+	return
+}
+
 // ConvertToFieldErrorToErrorList converts a FieldError into a field.ErrorList
 func ConvertToFieldErrorToErrorList(ctx context.Context, err *FieldError, path *field.Path) (errs field.ErrorList) {
+	return ConvertToFieldErrorToErrorListIgnorePathPrefix(ctx, err, path, nil)
+}
+
+// convertToFieldErrorToErrorList converts a FieldError into a field.ErrorList
+func convertToFieldErrorToErrorList(ctx context.Context, err *FieldError, path, ignorePathPrefix *field.Path) (errs field.ErrorList) {
 	if err == nil {
 		return
 	}
 	if len(err.errors) > 0 {
 		for i, oneErr := range err.errors {
 			if len(oneErr.errors) > 0 {
-				errs = append(errs, ConvertToFieldErrorToErrorList(ctx, &err.errors[i], path)...)
+				errs = append(errs, convertToFieldErrorToErrorList(ctx, &err.errors[i], path, ignorePathPrefix)...)
 			} else {
-				errs = append(errs, convertToFieldError(ctx, oneErr, path)...)
+				errs = append(errs, convertToFieldError(ctx, oneErr, path, ignorePathPrefix)...)
 			}
 		}
 		return
 	}
-	errs = append(errs, convertToFieldError(ctx, *err, path)...)
+	errs = append(errs, convertToFieldError(ctx, *err, path, ignorePathPrefix)...)
+	return
+}
+
+// removeDumplicateError removes duplicate errors from the list
+func removeDumplicateError(errs field.ErrorList) (newErrs field.ErrorList) {
+	seen := make(map[string]bool)
+	for _, err := range errs {
+		errString := err.Error()
+		if _, ok := seen[errString]; !ok {
+			seen[errString] = true
+			newErrs = append(newErrs, err)
+		}
+	}
 	return
 }
 
 var emptyFieldPathString = field.NewPath("").String()
 
-func convertToFieldError(ctx context.Context, err FieldError, path *field.Path) (errs field.ErrorList) {
+func convertToFieldError(_ context.Context, err FieldError, path, ignorePathPrefix *field.Path) (errs field.ErrorList) {
 	fieldPath := path
+
+	// this error is a bit special, the paths not really the path
+	if strings.Contains(err.Message, "expected exactly one, got neither") ||
+		strings.Contains(err.Message, "expected exactly one, got both") ||
+		strings.Contains(err.Message, "must not update deprecated field(s)") ||
+		strings.Contains(err.Message, "must not set the field(s)") {
+		if len(err.Paths) > 0 {
+			err.Message += ": " + strings.Join(err.Paths, ", ")
+		}
+		err.Paths = nil
+	}
+
+	pathString := flatten(err.Paths)
+	if ignorePathPrefix != nil && ignorePathPrefix.String() != emptyFieldPathString {
+		prefix := ignorePathPrefix.String()
+		if !strings.HasPrefix(pathString, prefix) {
+			return nil
+		}
+		pathString = strings.TrimPrefix(pathString, prefix)
+		if strings.HasPrefix(pathString, ".") {
+			pathString = strings.TrimPrefix(pathString, ".")
+		}
+		err.Paths = []string{pathString}
+	}
+
 	if len(err.Paths) > 0 {
 		// skip first empty path
 		if fieldPath.String() == emptyFieldPathString {
-			fieldPath = field.NewPath(err.Paths[0])
+			fieldPath = field.NewPath(err.Paths[0], err.Paths[1:]...)
 		} else {
-			fieldPath = fieldPath.Child(err.Paths[0])
+			fieldPath = fieldPath.Child(err.Paths[0], err.Paths[1:]...)
 		}
 	}
+
 	// checking which error
 	var fieldErr *field.Error
 	switch {

@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
 	kubemetrics "k8s.io/client-go/tools/metrics"
-	"k8s.io/client-go/util/workqueue"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -92,7 +91,8 @@ func init() {
 			stats.UnitSeconds,
 		),
 	}
-	workqueue.SetProvider(wp)
+	_ = wp
+	// workqueue.SetProvider(wp)
 
 	cp := &metrics.ClientProvider{
 		Latency: stats.Float64(

@@ -91,7 +91,15 @@ func init() {
 			stats.UnitSeconds,
 		),
 	}
+
 	_ = wp
+	/*
+		disable workqueue.SetProvider temporary
+		workqueue.SetProvider only set once.
+		Due to some weird init order issues, `knative.dev/pkg/controller` always init firstly instead of `sigs.k8s.io/controller-runtime/pkg/metrics`.
+		it will conflict to sigs.k8s.io/controller-runtime/pkg/metrics/workqueue.go and cause method in controller-runtime to be invalid
+		and no client-go metrics will be reported when we use controller-runtime framework
+	*/
 	// workqueue.SetProvider(wp)
 
 	cp := &metrics.ClientProvider{

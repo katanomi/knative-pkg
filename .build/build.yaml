@@ -2,35 +2,59 @@ kind: Build
 apiVersion: builds.katanomi.dev/v1alpha1
 spec:
   workspaces:
-  - name: source
+    - name: source
   tasks:
-    ## read oss version
     - name: oss-version
       taskRef:
         kind: ClusterTask
         name: alauda-read-oss-version
       params:
-      - name: version-file-path
-        value: ".build/opensource-version"
+        - name: version-file-path
+          value: .build/opensource-version
       workspaces:
-      - name: source
-        workspace: source
-    ## ko publish knative-operator image
-    - name: build-apiextensions-storageversion-migrate
+        - name: source
+          workspace: source
+    - name: apiextensions-storageversion-migrate
       taskRef:
         kind: ClusterTask
         name: alauda-ko-build
       workspaces:
         - name: source
           workspace: source
+        - name: cache
+      timeout: 0m
+      retries: 0
+      when: []
       params:
-        - name: verbose
-          value: "false"
         - name: import-path
-          value: "./apiextensions/storageversion/cmd/migrate"
+          value: ./apiextensions/storageversion/cmd/migrate
         - name: container-image
-          value: "build-harbor.alauda.cn/devops/knative.dev/pkg/apiextensions/storageversion/cmd/migrate"
+          value: build-harbor.alauda.cn/devops/knative.dev/pkg/apiextensions/storageversion/cmd/migrate
         - name: container-image-tag
           value: v$(tasks.oss-version.results.oss-version)-$(tasks.oss-version.results.commit-short-id)
         - name: tool-image
           value: registry.alauda.cn:60080/devops/builder-go-121:latest
+    - name: image-scan
+      timeout: 30m
+      retries: 0
+      taskRef:
+        resolver: katanomi.hub
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: trivy-image-scan
+      workspaces:
+        - name: source
+          workspace: source
+        - name: cache
+      runAfter:
+        - apiextensions-storageversion-migrate
+      when: []
+      params:
+        - name: targets
+          value:
+            - $(tasks.apiextensions-storageversion-migrate.results.ociContainerImageBuild-url)
+  runTemplate:
+    spec:
+      taskRunSpecs: []

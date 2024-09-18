@@ -33,7 +33,7 @@ spec:
         - name: container-image-tag
           value: v$(tasks.oss-version.results.oss-version)-$(tasks.oss-version.results.commit-short-id)
         - name: tool-image
-          value: registry.alauda.cn:60080/devops/builder-go-121:latest
+          value: registry.alauda.cn:60080/devops/builder-go:latest
     - name: image-scan
       timeout: 30m
       retries: 0

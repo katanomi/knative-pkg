@@ -75,6 +75,10 @@ type Condition struct {
 	// +optional
 	LastTransitionTime VolatileTime `json:"lastTransitionTime,omitempty" description:"last time the condition transit from one status to another"`
 
+	// Last time we probed the condition.
+	// +optional
+	LastProbeTime VolatileTime `json:"lastProbeTime,omitempty" description:"Last time we probed the condition."`
+
 	// The reason for the condition's last transition.
 	// +optional
 	Reason string `json:"reason,omitempty" description:"one-word CamelCase reason for the condition's last transition"`

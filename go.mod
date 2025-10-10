@@ -2,7 +2,7 @@ module knative.dev/pkg
 
 go 1.24
 
-toolchain go1.24.4
+toolchain go1.24.6
 
 require (
 	cloud.google.com/go/compute/metadata v0.3.0

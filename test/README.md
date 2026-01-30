@@ -122,7 +122,7 @@ Tests importing [`knative.dev/pkg/test`](#test-library) recognize these flags:
 - [`--namespace`](#specifying-namespace)
 - [`--logverbose`](#output-verbose-logs)
 - [`--ingressendpoint`](#specifying-ingress-endpoint)
-- [`--dockerrepo`](#specifying-docker-repo)
+- [`--registryrepo`](#specifying-registry-repo)
 - [`--tag`](#specifying-tag)
 - [`--imagetemplate`](#specifying-image-template)
 
@@ -182,14 +182,14 @@ The `--logverbose` argument lets you see verbose test logs and k8s logs.
 go test ./test --logverbose
 ```
 
-### Specifying docker repo
+### Specifying registry repo
 
-The `--dockerrepo` argument lets you specify a uri of the docker repo where you
+The `--registryrepo` argument lets you specify a uri of the registry repo where you
 have uploaded the test image to using `uploadtestimage.sh`. Defaults to
 `$KO_DOCKER_REPO`
 
 ```bash
-go test ./test --dockerrepo myspecialdockerrepo
+go test ./test --registryrepo myspecialregistryrepo
 ```
 
 ### Specifying tag

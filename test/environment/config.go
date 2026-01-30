@@ -30,7 +30,7 @@ type TestClientConfig struct {
 	Namespace            string        // K8s namespace (blank by default, to be overwritten by test suite)
 	IngressEndpoint      string        // Host to use for ingress endpoint
 	ImageTemplate        string        // Template to build the image reference (defaults to {{.Repository}}/{{.Name}}:{{.Tag}})
-	DockerRepo           string        // Docker repo (defaults to $KO_DOCKER_REPO)
+	registryRepo           string        // registry repo (defaults to $KO_DOCKER_REPO)
 	Tag                  string        // Tag for test images
 	SpoofRequestInterval time.Duration // SpoofRequestInterval is the interval between requests in SpoofingClient
 	SpoofRequestTimeout  time.Duration // SpoofRequestTimeout is the timeout for polling requests in SpoofingClient
@@ -53,8 +53,8 @@ func (c *TestClientConfig) InitFlags(fs *flag.FlagSet) {
 		"Provide a request timeout for the SpoofingClient")
 
 	defaultRepo := os.Getenv("KO_DOCKER_REPO")
-	fs.StringVar(&c.DockerRepo, "dockerrepo", defaultRepo,
-		"Provide the uri of the docker repo you have uploaded the test image to using `uploadtestimage.sh`. Defaults to $KO_DOCKER_REPO")
+	fs.StringVar(&c.registryRepo, "registryrepo", defaultRepo,
+		"Provide the uri of the registry repo you have uploaded the test image to using `uploadtestimage.sh`. Defaults to $KO_DOCKER_REPO")
 
 	fs.StringVar(&c.Tag, "tag", "latest", "Provide the version tag for the test images.")
 }

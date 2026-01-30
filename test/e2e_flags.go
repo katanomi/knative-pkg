@@ -69,7 +69,7 @@ func ImagePath(name string) string {
 		Name       string
 		Tag        string
 	}{
-		Repository: Flags.DockerRepo,
+		Repository: Flags.registryRepo,
 		Name:       name,
 		Tag:        Flags.Tag,
 	}); err != nil {
